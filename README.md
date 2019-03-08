@@ -1,4 +1,4 @@
-# Therapeutists management system
+# Therapists management system
 
 
 Run mongodb with docker-compose:
