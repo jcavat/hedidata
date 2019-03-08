@@ -24,13 +24,13 @@ import org.mongodb.scala.bson.ObjectId
 import collection.JavaConverters._
 import scala.util.{ Failure, Success }
 
-trait UserRoutes extends JsonSupport {
+trait ServerRoutes extends JsonSupport {
 
   import domain.Entities._
 
   implicit def system: ActorSystem
 
-  lazy val log = Logging(system, classOf[UserRoutes])
+  lazy val log = Logging(system, classOf[ServerRoutes])
 
   def userRegistryActor: ActorRef
 
@@ -45,7 +45,7 @@ trait UserRoutes extends JsonSupport {
     case _ => None
   }
 
-  lazy val userRoutes: Route = cors(corsSettings) {
+  lazy val allRoutes: Route = cors(corsSettings) {
     authenticateOAuth2(realm = "secure site", check) { token =>
       pathPrefix("users") {
         pathEnd {

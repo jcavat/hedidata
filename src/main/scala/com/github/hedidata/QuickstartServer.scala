@@ -11,7 +11,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-object QuickstartServer extends App with UserRoutes {
+object QuickstartServer extends App with ServerRoutes {
 
   implicit val system: ActorSystem = ActorSystem("helloAkkaHttpServer")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -22,7 +22,7 @@ object QuickstartServer extends App with UserRoutes {
 
   val userRegistryActor: ActorRef = system.actorOf(MongoRepositoryActor.props(login, password), "userRegistryActor")
 
-  lazy val routes: Route = userRoutes
+  lazy val routes: Route = allRoutes
 
   val serverBinding: Future[Http.ServerBinding] = Http().bindAndHandle(routes, "localhost", 8080)
 
