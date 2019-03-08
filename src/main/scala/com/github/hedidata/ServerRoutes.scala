@@ -45,34 +45,37 @@ trait ServerRoutes extends JsonSupport {
     case _ => None
   }
 
+  val userDirective =
+    pathPrefix("therapists") {
+      pathEnd {
+        concat(
+          post {
+            entity(as[Therapist]) { user =>
+              val newUser = if (user._id.isEmpty) user.copy(_id = Some(new ObjectId())) else user
+
+              val userCreated: Future[TherapistCreated] =
+                (userRegistryActor ? CreateTherapist(newUser)).mapTo[TherapistCreated]
+
+              onComplete(userCreated) {
+                case Success(objectId) => complete((StatusCodes.Created, objectId))
+                case Failure(e) => complete(HttpResponse(StatusCodes.InternalServerError, entity = e.toString))
+              }
+            }
+          },
+          get {
+            import spray.json.DefaultJsonProtocol._
+            val users: Future[Seq[Therapist]] =
+              (userRegistryActor ? GetTherapists).mapTo[Seq[Therapist]]
+            rejectEmptyResponse {
+              complete(users)
+            }
+          })
+      }
+    }
+
   lazy val allRoutes: Route = cors(corsSettings) {
     authenticateOAuth2(realm = "secure site", check) { token =>
-      pathPrefix("users") {
-        pathEnd {
-          concat(
-            post {
-              entity(as[User]) { user =>
-                val newUser = if (user._id.isEmpty) user.copy(_id = Some(new ObjectId())) else user
-
-                val userCreated: Future[UserCreated] =
-                  (userRegistryActor ? CreateUser(newUser)).mapTo[UserCreated]
-
-                onComplete(userCreated) {
-                  case Success(objectId) => complete((StatusCodes.Created, objectId))
-                  case Failure(e) => complete(HttpResponse(StatusCodes.InternalServerError, entity = e.toString))
-                }
-              }
-            },
-            get {
-              import spray.json.DefaultJsonProtocol._
-              val users: Future[Seq[User]] =
-                (userRegistryActor ? GetUsers).mapTo[Seq[User]]
-              rejectEmptyResponse {
-                complete(users)
-              }
-            })
-        }
-      }
+      userDirective
     }
   }
 }

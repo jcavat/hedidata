@@ -11,16 +11,15 @@ import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
-
-import domain.Entities.{ Tag, User }
+import domain.Entities.{ Consultation, Patient, Therapist }
 
 object MongoRepositoryActor {
   // Commands
-  final case object GetUsers
-  final case class CreateUser(user: User)
+  final case object GetTherapists
+  final case class CreateTherapist(therapist: Therapist)
 
   // Event
-  final case class UserCreated(id: ObjectId)
+  final case class TherapistCreated(id: ObjectId)
 
   def props(login: String, password: String): Props = Props(new MongoRepositoryActor(login, password))
 }
@@ -30,22 +29,22 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
   import MongoRepositoryActor._
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-  val codecRegistry: CodecRegistry = fromRegistries(fromProviders(classOf[Tag], classOf[User]), DEFAULT_CODEC_REGISTRY)
+  val codecRegistry: CodecRegistry = fromRegistries(fromProviders(classOf[Therapist], classOf[Patient], classOf[Consultation]), DEFAULT_CODEC_REGISTRY)
 
   val mongoClient: MongoClient = MongoClient(s"mongodb://$login:$password@localhost")
-  val database: MongoDatabase = mongoClient.getDatabase("db-users").withCodecRegistry(codecRegistry)
-  val collection: MongoCollection[User] = database.getCollection("users")
+  val database: MongoDatabase = mongoClient.getDatabase("db-hedidata").withCodecRegistry(codecRegistry)
+  val therapistCollection: MongoCollection[Therapist] = database.getCollection("therapists")
 
   def receive: Receive = {
-    case GetUsers =>
-      collection.find().toFuture() pipeTo sender()
+    case GetTherapists =>
+      therapistCollection.find().toFuture() pipeTo sender()
 
-    case CreateUser(user) =>
-      collection.insertOne(user).subscribe(new Observer[Completed] {
+    case CreateTherapist(therapist) =>
+      therapistCollection.insertOne(therapist).subscribe(new Observer[Completed] {
         override def onNext(result: Completed): Unit = println(s"onNext: $result")
         override def onError(e: Throwable): Unit = println(s"onError: $e")
         override def onComplete(): Unit = println("onComplete")
       })
-      sender() ! UserCreated(user._id.get)
+      sender() ! TherapistCreated(therapist._id.get)
   }
 }

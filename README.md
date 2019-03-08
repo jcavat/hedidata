@@ -11,15 +11,14 @@ Create `db-users` database and `users` collection with mongo-express at [http://
 
 Run the server with `sbt run` and try:
 
-post some users :
+post a therapist:
 
 ```
-curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/users -X POST -d '{"name": "asdf", "email": "adsf@test.com", "tags": [{"name": "youpie"}, {"name": "haha"}]}'
-curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/users -X POST -d '{"name": "tutu", "email": "tutu@tutu.com", "tags": []}'
+curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/therapists -X POST -d '{"firstName": "Joel", "lastName": "Cavat", "email": "toto@toto.com"}'
 ```
 
-get all users:
+get all therapists:
 
 ```
-curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/users
+curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/therapists
 ```
