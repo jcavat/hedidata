@@ -45,8 +45,7 @@ trait ServerRoutes extends JsonSupport {
     case _ => None
   }
 
-  val userDirective =
-    pathPrefix("therapists") {
+  val therapistsDirective = pathPrefix("therapists") {
       pathEnd {
         concat(
           post {
@@ -75,7 +74,7 @@ trait ServerRoutes extends JsonSupport {
 
   lazy val allRoutes: Route = cors(corsSettings) {
     authenticateOAuth2(realm = "secure site", check) { token =>
-      userDirective
+      therapistsDirective
     }
   }
 }
