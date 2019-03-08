@@ -18,6 +18,7 @@ import scala.concurrent.Future
 import com.github.hedidata.repository.MongoRepositoryActor._
 import akka.pattern.ask
 import akka.util.Timeout
+import com.github.hedidata.repository.ConsultationDto
 import com.typesafe.config.ConfigFactory
 import org.mongodb.scala.bson.ObjectId
 
@@ -99,9 +100,35 @@ trait ServerRoutes extends JsonSupport {
     }
   }
 
+  val consultationsDirective = pathPrefix("consultations") {
+    pathEnd {
+      concat(
+        post {
+          entity(as[ConsultationDto]) { consultationDto =>
+
+            val consultationAdded: Future[ConsultationAdded] =
+              (repositoryActor ? AddConsultation(consultationDto)).mapTo[ConsultationAdded]
+
+            onComplete(consultationAdded) {
+              case Success(_) => complete(StatusCodes.Created)
+              case Failure(e) => complete(HttpResponse(StatusCodes.NotFound, entity = e.getMessage))
+            }
+          }
+        },
+        get {
+          import spray.json.DefaultJsonProtocol._
+          val users: Future[Seq[Therapist]] =
+            (repositoryActor ? GetTherapists).mapTo[Seq[Therapist]]
+          rejectEmptyResponse {
+            complete(users)
+          }
+        })
+    }
+  }
+
   lazy val allRoutes: Route = cors(corsSettings) {
     authenticateOAuth2(realm = "secure site", check) { token =>
-      therapistsDirective ~ patientDirective
+      therapistsDirective ~ patientDirective ~ consultationsDirective
     }
   }
 }
