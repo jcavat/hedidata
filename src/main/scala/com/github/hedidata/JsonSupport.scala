@@ -23,4 +23,10 @@ trait JsonSupport extends SprayJsonSupport {
   implicit val tagJsonFormat = jsonFormat1(Tag)
   implicit val userJsonFormat = jsonFormat4(User)
   implicit val userCreatedJsonFormat = jsonFormat1(UserCreated)
+
+  implicit val therapistJsonFormat = jsonFormat4(Therapist)
+  implicit val consultationJsonFormat = jsonFormat3(Consultation)
+  implicit val patientJsonFormat = jsonFormat7(Patient)
+
+
 }
