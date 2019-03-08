@@ -1,20 +1,5 @@
-# Akka-http snippet with OAuth2 Bearer + CORS + MongoDB
+# Therapeutists management system
 
-## Summary
-
-This snippet is based on [https://github.com/jcavat/akka-http-with-bearer-tokens](https://github.com/jcavat/akka-http-with-bearer-tokens)
-
-We use OAuth2 baerer to authenticate + CORS + MongoDB database to persist data
-
-The list of credentials are given in the `application.conf` file in `src/main/resources` folder. MongoDB credentials 
-must be those declared in `docker-compose.yml` file.
-
-The documents to get/post/persist are defined as case classes : 
-
-```
-final case class User(_id: Option[ObjectId], name: String, email: String, tags: List[Tag])
-final case class Tag(name: String)
-```
 
 Run mongodb with docker-compose:
 
