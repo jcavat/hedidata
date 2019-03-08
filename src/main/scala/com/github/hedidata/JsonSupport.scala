@@ -1,6 +1,6 @@
 package com.github.hedidata
 
-import com.github.hedidata.repository.MongoRepositoryActor.TherapistCreated
+import com.github.hedidata.repository.MongoRepositoryActor.ResourceCreated
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.bson.types.ObjectId
 import spray.json.{ DefaultJsonProtocol, DeserializationException, JsString, JsValue, JsonFormat }
@@ -20,7 +20,7 @@ trait JsonSupport extends SprayJsonSupport {
     }
   }
 
-  implicit val userCreatedJsonFormat = jsonFormat1(TherapistCreated)
+  implicit val userCreatedJsonFormat = jsonFormat1(ResourceCreated)
   implicit val therapistJsonFormat = jsonFormat4(Therapist)
   implicit val consultationJsonFormat = jsonFormat3(Consultation)
   implicit val patientJsonFormat = jsonFormat7(Patient)

@@ -20,7 +20,7 @@ object QuickstartServer extends App with ServerRoutes {
   val login: String = ConfigFactory.load().getString("login")
   val password: String = ConfigFactory.load().getString("password")
 
-  val userRegistryActor: ActorRef = system.actorOf(MongoRepositoryActor.props(login, password), "userRegistryActor")
+  val repositoryActor: ActorRef = system.actorOf(MongoRepositoryActor.props(login, password), "userRegistryActor")
 
   lazy val routes: Route = allRoutes
 

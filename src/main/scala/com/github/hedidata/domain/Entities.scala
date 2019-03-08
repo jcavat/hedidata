@@ -4,10 +4,12 @@ import org.bson.types.ObjectId
 
 object Entities {
 
-  final case class Therapist(_id: Option[ObjectId], firstName: String, lastName: String, email: String)
+  sealed trait Entity
+
+  final case class Therapist(_id: Option[ObjectId], firstName: String, lastName: String, email: String) extends Entity
 
   //TODO: add datetime
-  final case class Consultation(_id: Option[ObjectId], idTherapist: ObjectId, resume: String)
+  final case class Consultation(_id: Option[ObjectId], idTherapist: ObjectId, resume: String) extends Entity
 
   final case class Patient(
     _id: Option[ObjectId],
@@ -16,5 +18,5 @@ object Entities {
     address: String,
     anamnesis: Option[String],
     therapists: List[ObjectId],
-    consultations: List[Consultation])
+    consultations: List[Consultation]) extends Entity
 }

@@ -14,7 +14,13 @@ Run the server with `sbt run` and try:
 post a therapist:
 
 ```
-curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/therapists -X POST -d '{"firstName": "Joel", "lastName": "Cavat", "email": "toto@toto.com"}'
+curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/therapists -X POST -d '{"firstName": "Marc", "lastName": "Champion", "email": "toto@toto.com"}'
+```
+
+post a patient:
+
+```
+curl -H "Content-Type: application/json" -H "Authorization: Bearer ABCD" http://localhost:8080/patients -X POST -d '{"firstName": "David", "lastName": "Hoffman", "address": "ch. étangs 3", "therapists": [], "consultations": []}'
 ```
 
 get all therapists:

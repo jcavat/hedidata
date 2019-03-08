@@ -32,7 +32,7 @@ trait ServerRoutes extends JsonSupport {
 
   lazy val log = Logging(system, classOf[ServerRoutes])
 
-  def userRegistryActor: ActorRef
+  def repositoryActor: ActorRef
 
   implicit lazy val timeout = Timeout(5.seconds)
 
@@ -46,35 +46,62 @@ trait ServerRoutes extends JsonSupport {
   }
 
   val therapistsDirective = pathPrefix("therapists") {
-      pathEnd {
-        concat(
-          post {
-            entity(as[Therapist]) { user =>
-              val newUser = if (user._id.isEmpty) user.copy(_id = Some(new ObjectId())) else user
+    pathEnd {
+      concat(
+        post {
+          entity(as[Therapist]) { therapist =>
+            val newTherapist = if (therapist._id.isEmpty) therapist.copy(_id = Some(new ObjectId())) else therapist
 
-              val userCreated: Future[TherapistCreated] =
-                (userRegistryActor ? CreateTherapist(newUser)).mapTo[TherapistCreated]
+            val userCreated: Future[ResourceCreated] =
+              (repositoryActor ? Create(newTherapist)).mapTo[ResourceCreated]
 
-              onComplete(userCreated) {
-                case Success(objectId) => complete((StatusCodes.Created, objectId))
-                case Failure(e) => complete(HttpResponse(StatusCodes.InternalServerError, entity = e.toString))
-              }
+            onComplete(userCreated) {
+              case Success(objectId) => complete((StatusCodes.Created, objectId))
+              case Failure(e) => complete(HttpResponse(StatusCodes.InternalServerError, entity = e.toString))
             }
-          },
-          get {
-            import spray.json.DefaultJsonProtocol._
-            val users: Future[Seq[Therapist]] =
-              (userRegistryActor ? GetTherapists).mapTo[Seq[Therapist]]
-            rejectEmptyResponse {
-              complete(users)
-            }
-          })
-      }
+          }
+        },
+        get {
+          import spray.json.DefaultJsonProtocol._
+          val users: Future[Seq[Therapist]] =
+            (repositoryActor ? GetTherapists).mapTo[Seq[Therapist]]
+          rejectEmptyResponse {
+            complete(users)
+          }
+        })
     }
+  }
+
+  val patientDirective = pathPrefix("patients") {
+    pathEnd {
+      concat(
+        post {
+          entity(as[Patient]) { patient =>
+            val newPatient = if (patient._id.isEmpty) patient.copy(_id = Some(new ObjectId())) else patient
+
+            val userCreated: Future[ResourceCreated] =
+              (repositoryActor ? Create(newPatient)).mapTo[ResourceCreated]
+
+            onComplete(userCreated) {
+              case Success(objectId) => complete((StatusCodes.Created, objectId))
+              case Failure(e) => complete(HttpResponse(StatusCodes.InternalServerError, entity = e.toString))
+            }
+          }
+        },
+        get {
+          import spray.json.DefaultJsonProtocol._
+          val users: Future[Seq[Therapist]] =
+            (repositoryActor ? GetTherapists).mapTo[Seq[Therapist]]
+          rejectEmptyResponse {
+            complete(users)
+          }
+        })
+    }
+  }
 
   lazy val allRoutes: Route = cors(corsSettings) {
     authenticateOAuth2(realm = "secure site", check) { token =>
-      therapistsDirective
+      therapistsDirective ~ patientDirective
     }
   }
 }
