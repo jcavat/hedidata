@@ -1,29 +1,28 @@
-package com.github.hedidata
+package com.github.hedidata.route
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
-
-import scala.concurrent.duration._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.HttpOriginRange
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.server.Directives.{entity, _}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
-import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
-
-import scala.concurrent.Future
-import com.github.hedidata.repository.MongoRepositoryActor._
 import akka.pattern.ask
 import akka.util.Timeout
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.hedidata.repository.ConsultationDto
+import com.github.hedidata.repository.MongoRepositoryActor._
+import com.github.hedidata.{JsonSupport, domain}
 import com.typesafe.config.ConfigFactory
 import org.mongodb.scala.bson.ObjectId
 
-import collection.JavaConverters._
-import scala.util.{ Failure, Success }
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 trait ServerRoutes extends JsonSupport {
 

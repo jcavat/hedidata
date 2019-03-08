@@ -9,7 +9,7 @@ object Entities {
   final case class Therapist(_id: Option[ObjectId], firstName: String, lastName: String, email: String) extends Entity
 
   //TODO: add datetime
-  final case class Consultation(_id: Option[ObjectId], idTherapist: ObjectId, resume: String) extends Entity
+  final case class Consultation(idTherapist: ObjectId, resume: String)
 
   final case class Patient(
     _id: Option[ObjectId],
