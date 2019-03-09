@@ -3,6 +3,7 @@ package com.github.hedidata.route
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Directives.{ entity, _ }
+import akka.http.scaladsl.server.{ ExceptionHandler, Route }
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
@@ -25,9 +26,18 @@ trait ConsultationsRoutes extends JsonSupport {
 
   private implicit lazy val timeout = Timeout(5.seconds)
 
-  val consultationsDirective = pathPrefix("consultations") {
-    pathEnd {
-      concat(
+  def exceptionHandler: ExceptionHandler =
+    ExceptionHandler {
+      case _: IllegalArgumentException =>
+        extractUri { id =>
+          println(s"$id is malformated")
+          complete(HttpResponse(StatusCodes.BadRequest, entity = s"$id is malformated and does not conform to an ObjectId"))
+        }
+    }
+
+  val consultationsDirective = handleExceptions(exceptionHandler) {
+    pathPrefix("consultations") {
+      pathEnd {
         post {
           entity(as[ConsultationDto]) { consultationDto =>
 
@@ -39,16 +49,19 @@ trait ConsultationsRoutes extends JsonSupport {
               case Failure(e) => complete(HttpResponse(StatusCodes.NotFound, entity = e.getMessage))
             }
           }
-        } /*,
-        // TODO: get according to id
-        get {
-          import spray.json.DefaultJsonProtocol._
-          val users: Future[Seq[Therapist]] =
-            (repositoryActor ? GetTherapists).mapTo[Seq[Therapist]]
-          rejectEmptyResponse {
-            complete(users)
+        }
+      } ~
+        pathPrefix(Segment) { segment =>
+          get {
+            import spray.json.DefaultJsonProtocol._
+            val consultations: Future[Seq[Consultation]] =
+              (repositoryActor ? GetConsultations(new ObjectId(segment))).mapTo[Seq[Consultation]]
+            rejectEmptyResponse {
+              complete(consultations)
+            }
+
           }
-        }*/ )
+        }
     }
   }
 

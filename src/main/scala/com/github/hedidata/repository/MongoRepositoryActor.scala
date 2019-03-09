@@ -1,25 +1,26 @@
 package com.github.hedidata
 package repository
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
 import akka.pattern.pipe
 import com.github.hedidata.route.ConsultationDto
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.bson.codecs.configuration.CodecRegistries.{ fromProviders, fromRegistries }
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.types.ObjectId
 import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import domain.Entities.{Consultation, Entity, Patient, Therapist}
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
+import domain.Entities.{ Consultation, Entity, Patient, Therapist }
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object MongoRepositoryActor {
   // Commands
   final case object GetTherapists
   final case object GetPatients
+  final case class GetConsultations(patientId: ObjectId)
   final case class Create(entity: Entity)
   final case class AddConsultation(idPatient: ObjectId, consultation: Consultation)
 
@@ -53,6 +54,9 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
     override def onComplete(): Unit = { println("onComplete"); sender ! ResourceCreated(objectId) }
   }
 
+  import org.mongodb.scala.model.Filters._
+  import org.mongodb.scala.model.Updates._
+
   def receive: Receive = {
 
     case GetTherapists =>
@@ -60,6 +64,13 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
 
     case GetPatients =>
       patientCollection.find().toFuture() pipeTo sender()
+
+    case GetConsultations(idPatient) =>
+      val s = sender()
+      val merde = patientCollection.find(equal("_id", idPatient)).first().toFuture().onComplete {
+        case Success(patient) => s ! patient.consultations
+        case Failure(e) => s ! e
+      }
 
     case Create(entity) => entity match {
       case patient: Patient =>
@@ -69,8 +80,6 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
     }
 
     case AddConsultation(idPatient, consultation) =>
-      import org.mongodb.scala.model.Filters._
-      import org.mongodb.scala.model.Updates._
       val s = sender()
       val patientUpdated: Future[Patient] = for {
         therapists <- therapistCollection.find(equal("_id", consultation.idTherapist)).limit(1).toFuture()
