@@ -2,7 +2,7 @@ package com.github.hedidata
 
 import com.github.hedidata.repository.MongoRepositoryActor.ResourceCreated
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import com.github.hedidata.repository.ConsultationDto
+import com.github.hedidata.route.ConsultationDto
 import org.bson.types.ObjectId
 import spray.json.{ DefaultJsonProtocol, DeserializationException, JsString, JsValue, JsonFormat }
 

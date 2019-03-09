@@ -1,27 +1,27 @@
 package com.github.hedidata
 package repository
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import akka.pattern.pipe
-import org.bson.codecs.configuration.CodecRegistries.{ fromProviders, fromRegistries }
+import com.github.hedidata.route.ConsultationDto
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.types.ObjectId
 import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
-import domain.Entities.{ Consultation, Entity, Patient, Therapist }
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import domain.Entities.{Consultation, Entity, Patient, Therapist}
 
-import scala.util.{ Failure, Success }
-
-final case class ConsultationDto(idPatient: ObjectId, idTherapist: ObjectId, resume: String)
+import scala.util.{Failure, Success}
 
 object MongoRepositoryActor {
   // Commands
   final case object GetTherapists
+  final case object GetPatients
   final case class Create(entity: Entity)
-  final case class AddConsultation(consultationDto: ConsultationDto)
+  final case class AddConsultation(idPatient: ObjectId, consultation: Consultation)
 
   // Event
   final case class ResourceCreated(id: ObjectId)
@@ -58,6 +58,9 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
     case GetTherapists =>
       therapistCollection.find().toFuture() pipeTo sender()
 
+    case GetPatients =>
+      patientCollection.find().toFuture() pipeTo sender()
+
     case Create(entity) => entity match {
       case patient: Patient =>
         patientCollection.insertOne(patient).subscribe(insertObserver(sender(), patient._id.get))
@@ -65,23 +68,23 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
         therapistCollection.insertOne(therapist).subscribe(insertObserver(sender(), therapist._id.get))
     }
 
-    case AddConsultation(consultationDto) =>
+    case AddConsultation(idPatient, consultation) =>
       import org.mongodb.scala.model.Filters._
       import org.mongodb.scala.model.Updates._
       val s = sender()
-      therapistCollection.find(equal("_id", consultationDto.idTherapist)).limit(1).toFuture().onComplete {
-        case Success(therapists) if therapists.nonEmpty => {
-          patientCollection
-            .findOneAndUpdate(
-              equal("_id", consultationDto.idPatient),
-              push("consultations", Consultation(consultationDto.idTherapist, consultationDto.resume)))
-            .subscribe(new Observer[Patient] {
-              override def onNext(result: Patient): Unit = println(result)
-              override def onError(e: Throwable): Unit = println(e)
-              override def onComplete(): Unit = s ! ConsultationAdded()
-            })
-        }
-        case _ => s ! Status.Failure(new Exception("Therapist not found"))
+      val patientUpdated: Future[Patient] = for {
+        therapists <- therapistCollection.find(equal("_id", consultation.idTherapist)).limit(1).toFuture()
+        patients <- patientCollection.find(equal("_id", idPatient)).limit(1).toFuture()
+        if therapists.nonEmpty && patients.nonEmpty
+        res <- patientCollection
+          .findOneAndUpdate(
+            equal("_id", idPatient),
+            push("consultations", consultation)).toFuture()
+      } yield res
+
+      patientUpdated onComplete {
+        case Success(patient) => s ! ConsultationAdded()
+        case Failure(e) => s ! Status.Failure(new Exception("Therapist or patient ID not found"))
       }
   }
 }
