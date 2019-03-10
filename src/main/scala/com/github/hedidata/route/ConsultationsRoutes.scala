@@ -46,7 +46,10 @@ trait ConsultationsRoutes extends JsonSupport {
 
             onComplete(consultationAdded) {
               case Success(_) => complete(StatusCodes.Created)
-              case Failure(e) => complete(HttpResponse(StatusCodes.NotFound, entity = e.getMessage))
+              case Failure(e) => {
+                println("-" + e)
+                complete(HttpResponse(StatusCodes.NotFound, entity = e.getMessage))
+              }
             }
           }
         }

@@ -80,20 +80,34 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
     }
 
     case AddConsultation(idPatient, consultation) =>
-      val s = sender()
-      val patientUpdated: Future[Patient] = for {
-        therapists <- therapistCollection.find(equal("_id", consultation.idTherapist)).limit(1).toFuture()
-        patients <- patientCollection.find(equal("_id", idPatient)).limit(1).toFuture()
-        if therapists.nonEmpty && patients.nonEmpty
-        patient <- patientCollection
+
+      val relatedTherapist: Future[Therapist] = therapistCollection.find(equal("_id", consultation.idTherapist)).first().toFuture()
+      val relatedPatient: Future[Patient] = patientCollection.find(equal("_id", idPatient)).first().toFuture()
+
+      val existingEntities: Future[Boolean] = relatedTherapist.zip(relatedPatient)
+        .transform {
+          case Success((therapist, patient)) =>
+            if (therapist == null) {
+              Failure(new Exception("Therapist not found"))
+            } else if (patient == null) {
+              Failure(new Exception("Patient not found"))
+            } else {
+              println(patient, patient == null)
+              println(therapist)
+              Success(true)
+            }
+
+          case failure @ Failure(e) => Failure(e)
+        }
+
+      val updatedPatient: Future[Patient] = existingEntities.flatMap(_ =>
+        patientCollection
           .findOneAndUpdate(
             equal("_id", idPatient),
             push("consultations", consultation)).toFuture()
-      } yield patient
+      )
 
-      patientUpdated onComplete {
-        case Success(_) => s ! ConsultationAdded()
-        case Failure(e) => s ! Status.Failure(new Exception("Therapist or patient ID not found"))
-      }
+      updatedPatient.map( _ => ConsultationAdded()) pipeTo sender()
+
   }
 }
