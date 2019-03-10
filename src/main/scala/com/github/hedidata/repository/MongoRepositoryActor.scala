@@ -67,7 +67,7 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
 
     case GetConsultations(idPatient) =>
       val s = sender()
-      val merde = patientCollection.find(equal("_id", idPatient)).first().toFuture().onComplete {
+      patientCollection.find(equal("_id", idPatient)).first().toFuture().onComplete {
         case Success(patient) => s ! patient.consultations
         case Failure(e) => s ! e
       }
@@ -85,14 +85,14 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
         therapists <- therapistCollection.find(equal("_id", consultation.idTherapist)).limit(1).toFuture()
         patients <- patientCollection.find(equal("_id", idPatient)).limit(1).toFuture()
         if therapists.nonEmpty && patients.nonEmpty
-        res <- patientCollection
+        patient <- patientCollection
           .findOneAndUpdate(
             equal("_id", idPatient),
             push("consultations", consultation)).toFuture()
-      } yield res
+      } yield patient
 
       patientUpdated onComplete {
-        case Success(patient) => s ! ConsultationAdded()
+        case Success(_) => s ! ConsultationAdded()
         case Failure(e) => s ! Status.Failure(new Exception("Therapist or patient ID not found"))
       }
   }
