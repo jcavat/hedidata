@@ -23,10 +23,12 @@ object MongoRepositoryActor {
   final case class GetConsultations(patientId: ObjectId)
   final case class Create(entity: Entity)
   final case class AddConsultation(idPatient: ObjectId, consultation: Consultation)
+  final case class AddTherapist(idPatient: ObjectId, idTherapist: ObjectId)
 
   // Event
   final case class ResourceCreated(id: ObjectId)
   final case class ConsultationAdded()
+  final case class TherapistAdded()
 
   def props(login: String, password: String): Props = Props(new MongoRepositoryActor(login, password))
 }

@@ -26,16 +26,9 @@ trait ConsultationsRoutes extends JsonSupport {
 
   private implicit lazy val timeout = Timeout(5.seconds)
 
-  def exceptionHandler: ExceptionHandler =
-    ExceptionHandler {
-      case _: IllegalArgumentException =>
-        extractUri { id =>
-          println(s"$id is malformated")
-          complete(HttpResponse(StatusCodes.BadRequest, entity = s"$id is malformated and does not conform to an ObjectId"))
-        }
-    }
+  def objectIdExceptionHandler: ExceptionHandler
 
-  val consultationsDirective = handleExceptions(exceptionHandler) {
+  val consultationsDirective = handleExceptions(objectIdExceptionHandler) {
     pathPrefix("consultations") {
       pathEnd {
         post {

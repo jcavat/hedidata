@@ -11,6 +11,8 @@ object Entities {
   //TODO: add datetime
   final case class Consultation(idTherapist: ObjectId, resume: String)
 
+  final case class EntityObjectId(id: ObjectId)
+
   final case class Patient(
     _id: Option[ObjectId],
     firstName: String,

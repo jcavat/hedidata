@@ -2,9 +2,10 @@ package com.github.hedidata.route
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging
+import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.HttpOriginRange
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{ ExceptionHandler, Route }
 import akka.http.scaladsl.server.directives.Credentials
 import akka.util.Timeout
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
@@ -17,7 +18,14 @@ import scala.concurrent.duration._
 
 trait ServerRoutes extends JsonSupport with TherapistsRoutes with PatientsRoutes with ConsultationsRoutes {
 
-  import domain.Entities._
+  def objectIdExceptionHandler: ExceptionHandler =
+    ExceptionHandler {
+      case _: IllegalArgumentException =>
+        extractUri { id =>
+          println(s"$id is malformated")
+          complete(HttpResponse(StatusCodes.BadRequest, entity = s"$id is malformated and does not conform to an ObjectId"))
+        }
+    }
 
   implicit def system: ActorSystem
 

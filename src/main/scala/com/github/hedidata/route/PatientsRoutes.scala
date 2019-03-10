@@ -3,6 +3,7 @@ package com.github.hedidata.route
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Directives.{ entity, _ }
+import akka.http.scaladsl.server.ExceptionHandler
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
@@ -13,7 +14,7 @@ import com.github.hedidata.{ JsonSupport, domain }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 
 trait PatientsRoutes extends JsonSupport {
 
@@ -23,9 +24,11 @@ trait PatientsRoutes extends JsonSupport {
 
   private implicit lazy val timeout = Timeout(5.seconds)
 
-  val patientDirective = pathPrefix("patients") {
-    pathEnd {
-      concat(
+  def objectIdExceptionHandler: ExceptionHandler
+
+  val patientDirective = handleExceptions(objectIdExceptionHandler) {
+    pathPrefix("patients") {
+      pathEnd {
         post {
           entity(as[Patient]) { patient =>
             val newPatient = if (patient._id.isEmpty) patient.copy(_id = Some(new ObjectId())) else patient
@@ -38,17 +41,24 @@ trait PatientsRoutes extends JsonSupport {
               case Failure(e) => complete(HttpResponse(StatusCodes.InternalServerError, entity = e.toString))
             }
           }
-        },
-        get {
-          import spray.json.DefaultJsonProtocol._
-          val users: Future[Seq[Patient]] =
-            (repositoryActor ? GetPatients).mapTo[Seq[Patient]]
-          rejectEmptyResponse {
-            complete(users)
+        } ~
+          get {
+            import spray.json.DefaultJsonProtocol._
+            val users: Future[Seq[Patient]] =
+              (repositoryActor ? GetPatients).mapTo[Seq[Patient]]
+            rejectEmptyResponse {
+              complete(users)
+            }
           }
-        })
+      } ~ post {
+        path("""^[a-fA-F0-9]+$""".r) { patientObjectId =>
+          entity(as[EntityObjectId]) { therapistObjectId =>
+            println(patientObjectId)
+            complete(HttpResponse(StatusCodes.Created, entity = new ObjectId(patientObjectId).toString))
+          }
+        }
+      }
     }
   }
-
 }
 
