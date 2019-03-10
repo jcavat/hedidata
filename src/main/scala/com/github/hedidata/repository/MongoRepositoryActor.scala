@@ -84,30 +84,22 @@ class MongoRepositoryActor(login: String, password: String) extends Actor with A
       val relatedTherapist: Future[Therapist] = therapistCollection.find(equal("_id", consultation.idTherapist)).first().toFuture()
       val relatedPatient: Future[Patient] = patientCollection.find(equal("_id", idPatient)).first().toFuture()
 
-      val existingEntities: Future[Boolean] = relatedTherapist.zip(relatedPatient)
-        .transform {
-          case Success((therapist, patient)) =>
-            if (therapist == null) {
-              Failure(new Exception("Therapist not found"))
-            } else if (patient == null) {
-              Failure(new Exception("Patient not found"))
-            } else {
-              println(patient, patient == null)
-              println(therapist)
-              Success(true)
-            }
+      val checkExistence: Future[Unit] = for {
+        therapist <- relatedTherapist
+        patient <- relatedPatient
+      } yield {
+        if (therapist == null) throw new Exception("Therapist not found")
+        if (patient == null) throw new Exception("Patient not found")
+        ()
+      }
 
-          case failure @ Failure(e) => Failure(e)
-        }
-
-      val updatedPatient: Future[Patient] = existingEntities.flatMap(_ =>
+      val updatedPatient: Future[Patient] = checkExistence.flatMap(_ =>
         patientCollection
           .findOneAndUpdate(
             equal("_id", idPatient),
-            push("consultations", consultation)).toFuture()
-      )
+            push("consultations", consultation)).toFuture())
 
-      updatedPatient.map( _ => ConsultationAdded()) pipeTo sender()
+      updatedPatient.map(_ => ConsultationAdded()) pipeTo sender()
 
   }
 }
