@@ -28,7 +28,7 @@ trait ConsultationsRoutes extends JsonSupport {
 
   def objectIdExceptionHandler: ExceptionHandler
 
-  val consultationsDirective = handleExceptions(objectIdExceptionHandler) {
+  val consultationsDirective: Route = handleExceptions(objectIdExceptionHandler) {
     pathPrefix("consultations") {
       pathEnd {
         post {

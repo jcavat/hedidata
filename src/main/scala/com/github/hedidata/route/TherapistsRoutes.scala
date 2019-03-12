@@ -3,6 +3,7 @@ package com.github.hedidata.route
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Directives.{ entity, _ }
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
@@ -24,7 +25,7 @@ trait TherapistsRoutes extends JsonSupport {
 
   private implicit lazy val timeout = Timeout(5.seconds)
 
-  val therapistsDirective = pathPrefix("therapists") {
+  val therapistsDirective: Route = pathPrefix("therapists") {
     pathEnd {
       concat(
         post {

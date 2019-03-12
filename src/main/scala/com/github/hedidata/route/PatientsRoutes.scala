@@ -3,7 +3,7 @@ package com.github.hedidata.route
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Directives.{ entity, _ }
-import akka.http.scaladsl.server.ExceptionHandler
+import akka.http.scaladsl.server.{ ExceptionHandler, Route }
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
@@ -26,7 +26,7 @@ trait PatientsRoutes extends JsonSupport {
 
   def objectIdExceptionHandler: ExceptionHandler
 
-  val patientDirective = handleExceptions(objectIdExceptionHandler) {
+  val patientDirective: Route = handleExceptions(objectIdExceptionHandler) {
     pathPrefix("patients") {
       pathEnd {
         post {
