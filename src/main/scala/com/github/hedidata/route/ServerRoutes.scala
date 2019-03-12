@@ -1,34 +1,22 @@
 package com.github.hedidata.route
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
-import akka.http.scaladsl.model.headers.{ HttpOriginRange, RawHeader }
+import akka.http.scaladsl.model.headers.HttpOriginRange
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ Directive1, ExceptionHandler, Route }
+import akka.http.scaladsl.server.{ ExceptionHandler, Route }
 import akka.http.scaladsl.server.directives.Credentials
 import akka.util.Timeout
-import authentikat.jwt.{ JsonWebToken, JwtClaimsSet, JwtHeader }
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
-import com.github.hedidata.{ JsonSupport, domain }
+import com.github.hedidata.JsonSupport
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-object ServerRoutes {
-  final case class LoginRequest(username: String, password: String)
-  private val tokenExpiryPeriodInDays = 1
-  private val secretKey = "ABCDEFGH"
-  private val header = JwtHeader("HS256")
-}
-
-trait ServerRoutes extends JsonSupport with TherapistsRoutes with PatientsRoutes with ConsultationsRoutes {
-
-  import ServerRoutes._
+trait ServerRoutes extends JsonSupport with TherapistsRoutes with PatientsRoutes with ConsultationsRoutes with LoginRoutesWithAuth {
 
   implicit def system: ActorSystem
   lazy val log = Logging(system, classOf[ServerRoutes])
@@ -51,47 +39,6 @@ trait ServerRoutes extends JsonSupport with TherapistsRoutes with PatientsRoutes
   def check(credentials: Credentials): Option[String] = credentials match {
     case p @ Credentials.Provided(token) if tokens.exists(t => p.verify(t)) => Some(token)
     case _ => None
-  }
-
-  private def grantClaims(username: String, expiryPeriodInDays: Long) = JwtClaimsSet(
-    Map(
-      "user" -> username,
-      "expiredAt" -> (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(expiryPeriodInDays))))
-
-  private def isTokenExpired(jwt: String) = getClaims(jwt) match {
-    case Some(claims) =>
-      claims.get("expiredAt") match {
-        case Some(value) => value.toLong < System.currentTimeMillis()
-        case None => false
-      }
-    case None => false
-  }
-
-  private def getClaims(jwt: String) = jwt match {
-    case JsonWebToken(_, claims, _) => claims.asSimpleMap.toOption
-    case _ => None
-  }
-
-  private def authenticated: Directive1[Map[String, Any]] =
-    optionalHeaderValueByName("Authorization").flatMap {
-      case Some(jwt) if isTokenExpired(jwt) =>
-        complete(StatusCodes.Unauthorized -> "Token expired.")
-
-      case Some(jwt) if JsonWebToken.validate(jwt, secretKey) =>
-        provide(getClaims(jwt).getOrElse(Map.empty[String, Any]))
-
-      case _ => complete(StatusCodes.Unauthorized)
-    }
-
-  private def login: Route = post {
-    entity(as[LoginRequest]) {
-      case lr @ LoginRequest("admin", "admin") =>
-        val claims = grantClaims(lr.username, tokenExpiryPeriodInDays)
-        respondWithHeader(RawHeader("Access-Token", JsonWebToken(header, claims, secretKey))) {
-          complete(StatusCodes.OK)
-        }
-      case LoginRequest(_, _) => complete(StatusCodes.Unauthorized)
-    }
   }
 
   lazy val allRoutes: Route = cors(corsSettings) {

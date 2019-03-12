@@ -18,10 +18,10 @@ object QuickstartServer extends App with ServerRoutes {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  val login: String = ConfigFactory.load().getString("login")
-  val password: String = ConfigFactory.load().getString("password")
+  val dbLogin: String = ConfigFactory.load().getString("login")
+  val dbPassword: String = ConfigFactory.load().getString("password")
 
-  val repositoryActor: ActorRef = system.actorOf(MongoRepositoryActor.props(login, password), "userRegistryActor")
+  val repositoryActor: ActorRef = system.actorOf(MongoRepositoryActor.props(dbLogin, dbPassword), "userRegistryActor")
 
   lazy val routes: Route = allRoutes
 
